@@ -1,0 +1,71 @@
+name: Lab Program 11 - StudentDetails View Autograding
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+
+  autograding:
+
+    runs-on: ubuntu-latest
+
+    services:
+
+      mysql:
+        image: mysql:8.0
+
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: CollegeDB
+
+        ports:
+          - 3306:3306
+
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install MySQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping \
+            -h 127.0.0.1 \
+            -uroot \
+            -proot \
+            --silent
+          do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Check Required Files
+        run: |
+          echo "Checking required files..."
+
+          test -f README.md
+          test -f STARTUP.md
+          test -f schema.sql
+          test -f solution.sql
+          test -f TEST_CASE.md
+          test -f test.sh
+          test -f .github/workflows/autograding.yml
+
+          echo "All required files are present."
+
+      - name: Make Test Executable
+        run: chmod +x test.sh
+
+      - name: Run Autograding
+        run: ./test.sh
